@@ -1,0 +1,124 @@
+```sh
+npx create-next-app@latest my-next-auth-app
+cd my-next-auth-app
+npm install next-auth
+
+# Create .env.local with the provided content
+echo "GITHUB_ID=your_github_oauth_app_id" > .env.local
+echo "GITHUB_SECRET=your_github_oauth_app_secret" >> .env.local
+
+# Start the development server
+npm run dev
+```
+
+To create this full-stack application with Next.js and NextAuth, we will need to set up a Next.js project, configure NextAuth for GitHub OAuth authentication, and create the necessary pages and components to handle user authentication.
+
+Let's start by setting up the Next.js project and installing the necessary dependencies.
+
+First, we will initialize a new Next.js project and install the dependencies:
+
+```bash
+npx create-next-app@latest my-next-auth-app
+cd my-next-auth-app
+npm install next-auth
+```
+
+Now, let's define the files and their content:
+
+`pages/_app.js`
+```javascript
+import { Provider } from 'next-auth/client';
+
+function MyApp({ Component, pageProps }) {
+  return (
+    <Provider session={pageProps.session}>
+      <Component {...pageProps} />
+    </Provider>
+  );
+}
+
+export default MyApp;
+```
+
+`pages/api/auth/[...nextauth].js`
+```javascript
+import NextAuth from 'next-auth';
+import Providers from 'next-auth/providers';
+
+export default NextAuth({
+  providers: [
+    Providers.GitHub({
+      clientId: process.env.GITHUB_ID,
+      clientSecret: process.env.GITHUB_SECRET,
+    }),
+  ],
+  callbacks: {
+    async session(session, user) {
+      session.user.email = user.email; // Pass the email to the front-end
+      return session;
+    },
+  },
+});
+```
+
+`pages/index.js`
+```javascript
+import { signIn, signOut, useSession } from 'next-auth/client';
+
+export default function Home() {
+  const [session, loading] = useSession();
+
+  if (loading) {
+    return <p>Loading...</p>;
+  }
+
+  return (
+    <div>
+      {!session && (
+        <>
+          <button onClick={() => signIn('github')}>Login with GitHub</button>
+        </>
+      )}
+      {session && (
+        <>
+          <h1>You are logged in {session.user.email}</h1>
+          <button onClick={() => signOut()}>Logout</button>
+        </>
+      )}
+    </div>
+  );
+}
+```
+
+`.env.local`
+```
+GITHUB_ID=your_github_oauth_app_id
+GITHUB_SECRET=your_github_oauth_app_secret
+```
+
+Make sure to replace `your_github_oauth_app_id` and `your_github_oauth_app_secret` with your actual GitHub OAuth application credentials.
+
+`package.json` (additions only)
+```json
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "latest",
+    "next-auth": "^3.0.0",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1"
+  }
+}
+```
+
+Run the development server:
+
+```bash
+npm run dev
+```
+
+This concludes a fully working implementation.
